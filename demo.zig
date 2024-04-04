@@ -24,19 +24,17 @@ pub fn main() !u8 {
             .o = "output",
         };
 
-        pub const meta = .{
-            .option_docs = .{
-                .output= "output help",
-                .@"with-offset" = "with-offset help",
-                .@"with-hexdump" = "with-hexdump help",
-                .@"intermix-source" = "intermix-source",
-                .numberOfBytes = "numberOfBytes help",
-                .signed_number = "signed_number help",
-                .unsigned_number = "unsigned_number help",
-                .mode = "mode help",
-                .help = "help help",
-            }
-        };
+        pub const meta = .{ .option_docs = .{
+            .output = "output help",
+            .@"with-offset" = "with-offset help",
+            .@"with-hexdump" = "with-hexdump help",
+            .@"intermix-source" = "intermix-source",
+            .numberOfBytes = "numberOfBytes help",
+            .signed_number = "signed_number help",
+            .unsigned_number = "unsigned_number help",
+            .mode = "mode help",
+            .help = "help help",
+        } };
     };
 
     const options = argsParser.parseForCurrentProcess(Options, argsAllocator, .print) catch return 1;

@@ -77,12 +77,12 @@ pub fn parse(comptime Generic: type, args_iterator: anytype, allocator: std.mem.
 /// - `error_handling` defines how parser errors will be handled.
 ///
 /// Note that `.executable_name` in the result will not be set!
-pub fn parseWithVerb(comptime Generic: type, comptime Verb: type, args_iterator: anytype, allocator: std.mem.Allocator, comptime error_handling: ErrorHandling) !ParseArgsResult(Generic, Verb) {
+pub fn parseWithVerb(comptime Generic: type, comptime Verb: type, args_iterator: anytype, allocator: std.mem.Allocator, error_handling: ErrorHandling) !ParseArgsResult(Generic, Verb) {
     return parseInternal(Generic, Verb, args_iterator, allocator, error_handling);
 }
 
 /// Same as parse, but with anytype argument for testability
-fn parseInternal(comptime Generic: type, comptime MaybeVerb: ?type, args_iterator: anytype, allocator: std.mem.Allocator, comptime error_handling: ErrorHandling) !ParseArgsResult(Generic, MaybeVerb) {
+fn parseInternal(comptime Generic: type, comptime MaybeVerb: ?type, args_iterator: anytype, allocator: std.mem.Allocator, error_handling: ErrorHandling) !ParseArgsResult(Generic, MaybeVerb) {
     var result = ParseArgsResult(Generic, MaybeVerb){
         .arena = std.heap.ArenaAllocator.init(allocator),
         .options = Generic{},
@@ -496,7 +496,7 @@ fn parseOption(
     arena: std.mem.Allocator,
     target_struct: *Spec,
     args: anytype,
-    comptime error_handling: ErrorHandling,
+    error_handling: ErrorHandling,
     last_error: *?anyerror,
     /// The name of the option that is currently parsed.
     comptime name: []const u8,
@@ -650,10 +650,10 @@ pub const ErrorHandling = union(enum) {
     collect: *ErrorCollection,
 
     /// Forwards the parsing error to a functionm
-    forward: fn (err: Error) anyerror!void,
+    forward: *const fn (err: Error) anyerror!void,
 
     /// Processes an error with the given handling method.
-    fn process(comptime self: Self, src_error: anytype, err: Error) !void {
+    fn process(self: Self, src_error: anytype, err: Error) !void {
         if (@typeInfo(@TypeOf(src_error)) != .ErrorSet)
             @compileError("src_error must be a error union!");
         switch (self) {
@@ -960,7 +960,7 @@ test "index of raw indicator --" {
     try std.testing.expectEqual(args.positionals.len, 5);
 }
 
-fn reserved_argument(arg: [] const u8) bool {
+fn reserved_argument(arg: []const u8) bool {
     return std.mem.eql(u8, arg, "shorthands") or std.mem.eql(u8, arg, "meta");
 }
 
@@ -1014,11 +1014,9 @@ pub fn printHelp(comptime Generic: type, name: []const u8, writer: anytype) !voi
                         try writer.print("      ", .{});
                 }
                 const fmtString = std.fmt.comptimePrint("--{{s: <{}}}   {{s}}\n", .{maxOptionLength});
-                try writer.print(fmtString, .{field.name, @field(Generic.meta.option_docs, field.name)});
+                try writer.print(fmtString, .{ field.name, @field(Generic.meta.option_docs, field.name) });
             }
         }
-
-
     }
 }
 
@@ -1038,7 +1036,7 @@ test "full help" {
             .option_docs = .{
                 .boolflag = "a boolean flag",
                 .stringflag = "a string flag",
-            }
+            },
         };
     };
 
@@ -1048,14 +1046,14 @@ test "full help" {
     try printHelp(Options, "test", test_buffer.writer());
 
     const expected =
-    \\Usage: test [--boolflag] [--stringflag]
-    \\
-    \\testing tool
-    \\
-    \\Options:
-    \\  -b, --boolflag     a boolean flag
-    \\      --stringflag   a string flag
-    \\
+        \\Usage: test [--boolflag] [--stringflag]
+        \\
+        \\testing tool
+        \\
+        \\Options:
+        \\  -b, --boolflag     a boolean flag
+        \\      --stringflag   a string flag
+        \\
     ;
 
     try std.testing.expectEqualStrings(expected, test_buffer.items);
@@ -1070,13 +1068,10 @@ test "help with no usage summary" {
             .b = "boolflag",
         };
 
-        pub const meta = .{
-            .full_text = "testing tool",
-            .option_docs = .{
-                .boolflag = "a boolean flag",
-                .stringflag = "a string flag",
-            }
-        };
+        pub const meta = .{ .full_text = "testing tool", .option_docs = .{
+            .boolflag = "a boolean flag",
+            .stringflag = "a string flag",
+        } };
     };
 
     var test_buffer = std.ArrayList(u8).init(std.testing.allocator);
@@ -1085,14 +1080,14 @@ test "help with no usage summary" {
     try printHelp(Options, "test", test_buffer.writer());
 
     const expected =
-    \\Usage: test
-    \\
-    \\testing tool
-    \\
-    \\Options:
-    \\  -b, --boolflag     a boolean flag
-    \\      --stringflag   a string flag
-    \\
+        \\Usage: test
+        \\
+        \\testing tool
+        \\
+        \\Options:
+        \\  -b, --boolflag     a boolean flag
+        \\      --stringflag   a string flag
+        \\
     ;
 
     try std.testing.expectEqualStrings(expected, test_buffer.items);

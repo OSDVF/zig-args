@@ -77,12 +77,12 @@ pub fn parse(comptime Generic: type, args_iterator: anytype, allocator: std.mem.
 /// - `error_handling` defines how parser errors will be handled.
 ///
 /// Note that `.executable_name` in the result will not be set!
-pub fn parseWithVerb(comptime Generic: type, comptime Verb: type, args_iterator: anytype, allocator: std.mem.Allocator, comptime error_handling: ErrorHandling) !ParseArgsResult(Generic, Verb) {
+pub fn parseWithVerb(comptime Generic: type, comptime Verb: type, args_iterator: anytype, allocator: std.mem.Allocator, error_handling: ErrorHandling) !ParseArgsResult(Generic, Verb) {
     return parseInternal(Generic, Verb, args_iterator, allocator, error_handling);
 }
 
 /// Same as parse, but with anytype argument for testability
-fn parseInternal(comptime Generic: type, comptime MaybeVerb: ?type, args_iterator: anytype, allocator: std.mem.Allocator, comptime error_handling: ErrorHandling) !ParseArgsResult(Generic, MaybeVerb) {
+fn parseInternal(comptime Generic: type, comptime MaybeVerb: ?type, args_iterator: anytype, allocator: std.mem.Allocator, error_handling: ErrorHandling) !ParseArgsResult(Generic, MaybeVerb) {
     var result = ParseArgsResult(Generic, MaybeVerb){
         .arena = std.heap.ArenaAllocator.init(allocator),
         .options = Generic{},
@@ -496,7 +496,7 @@ fn parseOption(
     arena: std.mem.Allocator,
     target_struct: *Spec,
     args: anytype,
-    comptime error_handling: ErrorHandling,
+    error_handling: ErrorHandling,
     last_error: *?anyerror,
     /// The name of the option that is currently parsed.
     comptime name: []const u8,
@@ -650,10 +650,10 @@ pub const ErrorHandling = union(enum) {
     collect: *ErrorCollection,
 
     /// Forwards the parsing error to a functionm
-    forward: fn (err: Error) anyerror!void,
+    forward: *const fn (err: Error) anyerror!void,
 
     /// Processes an error with the given handling method.
-    fn process(comptime self: Self, src_error: anytype, err: Error) !void {
+    fn process(self: Self, src_error: anytype, err: Error) !void {
         if (@typeInfo(@TypeOf(src_error)) != .ErrorSet)
             @compileError("src_error must be a error union!");
         switch (self) {

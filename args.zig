@@ -266,7 +266,7 @@ fn parseInternal(comptime Generic: type, comptime MaybeVerb: ?type, args_iterato
 
                     if (result.verb == null) {
                         try error_handling.process(error.EncounteredUnknownVerb, Error{
-                            .option = "verb",
+                            .option = item,
                             .kind = .unsupported,
                         });
                     }
